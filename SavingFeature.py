@@ -1,4 +1,5 @@
 import bpy
+from mathutils import Vector
 
 class MoveObjectXOperator(bpy.types.Operator):
     bl_idname = "object.move_x_offset"
@@ -18,6 +19,28 @@ class MoveObjectXOperator(bpy.types.Operator):
         print(f"DEBUG: Moved {obj.name}to X = {obj.location.x:.4f}")
         context.view_layer.update()
         return {'FINISHED'}
+
+class ResetObjectLocationOperator(bpy.types.Operator):
+    #Reset object to origin/relative origin
+    bl_idname = "object.reset_location"
+    bl_label = "Reset Location"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        #Execute reset operation
+        obj = context.scene.move_object
+        if not obj:
+            self.report({'ERROR'}, "No object selected")
+            print("ERROR: No object selected")
+            return {'CANCELLED'}
+            
+        #Reset object location
+        obj.location = Vector((0.03, 0.0, 0.0))
+        self.report({'INFO'}, f"Reset {obj.name} location to (0.03, 0.0, 0.0)")
+        print("DEBUG: Resetect {obj.name} location to (0.03, 0.0, 0.0)")
+        context.view_layer.update()
+        return {'FINISHED'}    
+    
     
 class MoveObjectPanel(bpy.types.Panel):
     bl_label = "Move Object Tool"
@@ -40,10 +63,12 @@ class MoveObjectPanel(bpy.types.Panel):
         box = layout.box()
         box.label(text = "Actions", icon = 'TOOL_SETTINGS')
         box.operator("object.move_x_offset", text = "Move X by 0.01")
+        box.operator("object.reset_location", text = "Reset Location")
             
 
 classes = [
     MoveObjectXOperator, 
+    ResetObjectLocationOperator,
     MoveObjectPanel,
 ]
 
