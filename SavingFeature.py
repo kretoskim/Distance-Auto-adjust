@@ -115,7 +115,11 @@ class RecallObjectLocationOperator(bpy.types.Operator):
             return {'CANCELLED'}
         obj.location = saved_data.saved_location
         obj.rotation_euler = saved_data.saved_rotation
-        self.report({'INFO'}, f"Recalled {obj.name} saved location and rotation")
+               
+        #Call rotation operator
+        bpy.ops.object.rotate_45_z()
+        
+        self.report({'INFO'}, f"Recalled {obj.name} and rotated")
         context.view_layer.update()
         return {'FINISHED'}
     
@@ -185,6 +189,15 @@ class MoveObjectPanel(bpy.types.Panel):
         else:
             box.label(text = "No Object in active slot", icon = 'ERROR')
         
+        #Saved Status
+        box = layout.box()
+        saved_data = scene.object_location
+        if saved_data.has_saved_location or saved_data.has_saved_rotation:
+            box.label(text = "Status: Saved", icon = 'CHECKMARK')
+        else: 
+            box.label(text = "Status: Not Saved", icon = 'ERROR')
+        
+        #Actions
         box = layout.box()
         box.label(text = "Actions", icon = 'TOOL_SETTINGS')
         box.operator("object.move_x_offset")
