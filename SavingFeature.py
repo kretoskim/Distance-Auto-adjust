@@ -9,25 +9,41 @@ class ObjectLocationPropertyGroup(bpy.types.PropertyGroup):
         size = 3,
         default = (0.03, 0.0, 0.0)
     )
-    
-    #propertyGroup to store saved rotation
     saved_rotation: bpy.props.FloatVectorProperty(
         name = "Saved Rotation",
         description = "Stored location (X, Y, Z) of the selected object",
         size = 3,
         default = (0.0, 0.0, 0.0)
-    )
-    
-    has_saved_location: bpy.props.BoolProperty(
-        name = "Has Saved location",
-        description = "Indicates if location is saved",
-        default = False
     ) 
-    has_saved_rotation: bpy.props.BoolProperty(
-        name = "Has Saved rotation",
-        description = "Indicates if rotation is saved",
-        default = False  
-    )      
+    has_saved_location: bpy.props.BoolProperty(default = False) 
+    has_saved_rotation: bpy.props.BoolProperty(default = False) 
+    
+#Utility to get current active object
+def get_active_move_object(context):
+    scene = context.scene
+    if scene.active_object_slot == 'SLOT1':
+        return scene.object_slot_1
+    elif scene.active_object_slot == 'SLOT2':
+        return scene.object_slot_2
+    return None
+
+#Auto-hide inactive slot object
+def update_active_slot(self, context):
+    active_obj = get_active_move_object(context)
+    context.scene.move_object = active_obj
+    
+    for obj in [context.scene.object_slot_1, context.scene.object_slot_2]:
+        if obj:
+            if obj == active_obj:
+                obj.hide_set(False) #Visible in viewport
+                obj.hide_viewport = False
+                obj.hide_render = False
+                obj.hide_select = False        
+            else:
+                obj.hide_set(True) #Hidden in viewport
+                obj.hide_viewport = False
+                obj.hide_render = False
+                obj.hide_select = False
 
 class MoveObjectXOperator(bpy.types.Operator):
     bl_idname = "object.move_x_offset"
@@ -134,6 +150,16 @@ class RotateObjectOperator(bpy.types.Operator):
         self.report({'INFO'}, f"Rotated {obj.name} by 45")
         context.view_layer.update()
         return {'FINISHED'}
+
+#Dynamic dropdown update
+def active_slot_items(self, context):
+    scene = context.scene
+    slot1_name = scene.object_slot_1.name if scene.object_slot_1 else "Slot 1 (Empty)"
+    slot2_name = scene.object_slot_2.name if scene.object_slot_2 else "Slot 2 (Empty)"
+    return [
+        ('SLOT1', slot1_name, "Use object in Slot 1"),
+        ('SLOT2', slot2_name, "Use object in Slot 2"),
+    ]   
         
 class MoveObjectPanel(bpy.types.Panel):
     bl_label = "Move Object Tool"
@@ -149,26 +175,24 @@ class MoveObjectPanel(bpy.types.Panel):
         
         box = layout.box()
         box.label (text = "Object Selection", icon = 'OBJECT_DATA')
-        if not scene.move_object:
-            box.label (text = "Select Valid Object", icon = 'ERROR')
-        box.prop(scene, "move_object", text = "Object")
+        box.prop(scene, "object_slot_1", text = "Slot_1")
+        box.prop(scene, "object_slot_2", text = "Slot_2")
+        box.prop(scene, "active_object_slot", text = "Active Slot")
         
-        box = layout.box()
-        box.label(text = "Location Info", icon = 'INFO')
-        if scene.object_location.has_saved_location:
-            loc = scene.object_location.saved_location
-            box.label(text = f"Saved: ({loc[0]: .4f}, {loc[1]: .4f}, {loc[2]: .4f})")
+        active_obj = get_active_move_object(context)
+        if active_obj:
+            box.label(text = f"Active Object: {active_obj.name}", icon = 'INFO')
         else:
-            box.label(text = "No saved location")
+            box.label(text = "No Object in active slot", icon = 'ERROR')
         
         box = layout.box()
         box.label(text = "Actions", icon = 'TOOL_SETTINGS')
-        box.operator("object.move_x_offset", text = "Move X by 0.01")
-        box.operator("object.save_location_rotation", text = "Save Location & Rotation")
-        box.operator("object.recall_saved_location_rotation", text = "Recall Save")
-        box.operator("object.reset_location", text = "Reset Location & Rotation")
-        box.operator("object.clear_saved_location", text = "Clear Saves")
-        box.operator("object.rotate_45_z", text = "Rotate 45")
+        box.operator("object.move_x_offset")
+        box.operator("object.save_location_rotation")
+        box.operator("object.recall_saved_location_rotation")
+        box.operator("object.reset_location")
+        box.operator("object.clear_saved_location")
+        box.operator("object.rotate_45_z")
                  
 classes = [
     ObjectLocationPropertyGroup,
@@ -183,29 +207,31 @@ classes = [
 
 def register():
     #Register class and properties
-    print("Registering Move Objects Tool classes")
     for cls in classes:
         bpy.utils.register_class(cls)
         
-    bpy.types.Scene.move_object = bpy.props.PointerProperty(
-        name = "Move Object",
-        description = "Object to move along the X-axis", 
-        type = bpy.types.Object
+    bpy.types.Scene.object_slot_1 = bpy.props.PointerProperty(type = bpy.types.Object)    
+    bpy.types.Scene.object_slot_2 = bpy.props.PointerProperty(type = bpy.types.Object)  
+     
+    bpy.types.Scene.active_object_slot = bpy.props.EnumProperty(
+        name = "Active Object Slot",
+        items = active_slot_items,
+        update = update_active_slot
     )
-    bpy.types.Scene.object_location = bpy.props.PointerProperty( 
-        type = ObjectLocationPropertyGroup
-    )
+    bpy.types.Scene.object_location = bpy.props.PointerProperty(type = ObjectLocationPropertyGroup)
+    bpy.types.Scene.move_object = bpy.props.PointerProperty(type = bpy.types.Object)
+    
+        
     
 def unregister():
     #Unregister classes and properties
-    print ("Unregistering Move object Toll classes")
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-        
-    if hasattr(bpy.types.Scene, "move_object"):
-        del bpy.types.Scene.move_object
-    if hasattr(bpy.types.Scene, "object_location"):
-        del bpy.types.Scene.object_location  
+    del bpy.types.Scene.object_slot_1
+    del bpy.types.Scene.object_slot_2
+    del bpy.types.Scene.active_object_slot
+    del bpy.types.Scene.object_location  
+    del bpy.types.Scene.move_object  
 
 if __name__ == "__main__":
     register()
