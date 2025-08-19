@@ -1,38 +1,36 @@
 import bpy
 
-#Panel
+# Custom panel in the 3D Viewport sidebar (N-panel)
 class VIEW3D_PT_custom_albedo(bpy.types.Panel):
-    bl_label = "Custom Albedo Changer"
+    bl_label = "Custom Reflection Changer"
     bl_idname = "VIEW3D_PT_custom_albedo"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Custom"
-    bl_context = "objectmode"
+    bl_category = "Custom"  
+    bl_context = "objectmode" 
     
     def draw(self, context):
         layout = self.layout
         
-        #Dropdown
-        layout.prop(context.scene, "custom_material", text = "Materal")
+        # Dropdown to select an existing material
+        layout.prop(context.scene, "custom_material", text="Material")
         
-        #Get material
+        # Get the selected material
         mat = bpy.data.materials.get(context.scene.custom_material)
         
         if mat and mat.use_nodes:
-            principled = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'), None)
-            #Color picker 
-            if principled:
-                layout.prop(principled.inputs['Base Color'], "default_value", text = "Albedo Color")
+            # Check for Octane Specular Material node by bl_idname
+            octane_specular = next((node for node in mat.node_tree.nodes if node.bl_idname == 'OctaneSpecularMaterial'), None)
+            if octane_specular:
+                # Color picker for Reflection input
+                layout.prop(octane_specular.inputs['Transmission'], "default_value", text="Transmission Color")
             else:
-                diffuse = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_DIFFUSE'), None)
-                if diffuse:
-                    layout.prop(diffuse.inputs['Color'], "default_value", text = "Diffuse Color")
-                else:
-                    layout.label(text = "No supported shader found")
+                layout.label(text="No Octane Specular Material found.")
+        else:
+            layout.label(text="No material selected or nodes not enabled.")
 
-#Register property & panel
+# Register the custom material property, panel, and operator
 def register():
-    # Define the EnumProperty for material selection
     bpy.types.Scene.custom_material = bpy.props.EnumProperty(
         name="Material",
         description="Select an existing material",
@@ -41,11 +39,11 @@ def register():
     )
     bpy.utils.register_class(VIEW3D_PT_custom_albedo)
 
-# Unregister the property and panel
+# Unregister the property, panel, and operator
 def unregister():
     del bpy.types.Scene.custom_material
     bpy.utils.unregister_class(VIEW3D_PT_custom_albedo)
 
 # Register when running the script
 if __name__ == "__main__":
-    register()                        
+    register()
