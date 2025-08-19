@@ -13,7 +13,7 @@ class VIEW3D_PT_custom_albedo(bpy.types.Panel):
         layout = self.layout
         
         # Dropdown to select an existing material
-        layout.prop(context.scene, "custom_material", text="Material")
+        layout.prop(context.scene, "custom_material", text = "Material")
         
         # Get the selected material
         mat = bpy.data.materials.get(context.scene.custom_material)
@@ -23,23 +23,23 @@ class VIEW3D_PT_custom_albedo(bpy.types.Panel):
             octane_specular = next((node for node in mat.node_tree.nodes if node.bl_idname == 'OctaneSpecularMaterial'), None)
             if octane_specular:
                 # Color picker for Reflection input
-                layout.prop(octane_specular.inputs['Transmission'], "default_value", text="Transmission Color")
+                layout.prop(octane_specular.inputs['Transmission'], "default_value", text = "Transmission Color")
             else:
-                layout.label(text="No Octane Specular Material found.")
+                layout.label(text = "No Octane Specular Material found.")
         else:
-            layout.label(text="No material selected or nodes not enabled.")
+            layout.label(text = "No material selected or nodes not enabled.")
 
-# Register the custom material property, panel, and operator
+# Register 
 def register():
     bpy.types.Scene.custom_material = bpy.props.EnumProperty(
-        name="Material",
-        description="Select an existing material",
-        items=lambda self, context: [(mat.name, mat.name, "") for mat in bpy.data.materials],
-        update=lambda self, context: None
+        name = "Material",
+        description = "Select an existing material",
+        items = lambda self, context: [(mat.name, mat.name, "") for mat in bpy.data.materials],
+        update = lambda self, context: None
     )
     bpy.utils.register_class(VIEW3D_PT_custom_albedo)
 
-# Unregister the property, panel, and operator
+# Unregister
 def unregister():
     del bpy.types.Scene.custom_material
     bpy.utils.unregister_class(VIEW3D_PT_custom_albedo)
