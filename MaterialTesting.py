@@ -20,13 +20,15 @@ class VIEW3D_PT_custom_albedo(bpy.types.Panel):
         
         if mat and mat.use_nodes:
             principled = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'), None)
+            #Color picker 
             if principled:
-                #Color picker 
                 layout.prop(principled.inputs['Base Color'], "default_value", text = "Albedo Color")
             else:
-                layout.label(text = "No principled BSDF")
-        else:
-            layout.label(text = "No nodes enabled")
+                diffuse = next((node for node in mat.node_tree.nodes if node.type == 'BSDF_DIFFUSE'), None)
+                if diffuse:
+                    layout.prop(diffuse.inputs['Color'], "default_value", text = "Diffuse Color")
+                else:
+                    layout.label(text = "No supported shader found")
 
 #Register property & panel
 def register():
