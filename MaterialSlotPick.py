@@ -25,24 +25,40 @@ def assign_material(obj, mat, obj_name, mat_name):
         )
 
 #Update Functions        
-def update_target1(self, context):
-    assign_material(self.target1, self.material1, "Object 1", "Material 1")
+def update_target1_a(self, context):
+    assign_material(self.target1_a, self.material1, "Object 1A", "Material 1")
+    
+def update_target1_b(self, context):
+    assign_material(self.target1_b, self.material1, "Object 1B", "Material 1")    
     
 def update_target2(self, context):
     assign_material(self.target2, self.material1, "Object 2", "Material 2")
 
 def update_material1(self, context):
-    assign_material(self.target1, self.material1, "Object 1", "Material 1")
+    if self.target_a:
+        assign_material(self.target1_a, self.material1, "Object 1A", "Material 1")
+    if self.target_b:
+        assign_material(self.target1_b, self.material1, "Object 1B", "Material 1")
+    if not self.target1_a and not self.target_b and self.material1:
+        bpy.context.window_manager.popup_menu(
+            lambda self, ctx: self.layout.label(text = "No objects selected for Material 1"),
+            title = "Warning"
+        )            
     
 def update_material2(self, context):
     assign_material(self.target2, self.material2, "Object 2", "Material 2")            
                             
 #Define PointerProperty                             
-bpy.types.Scene.target1 = PointerProperty(
+bpy.types.Scene.target1_a = PointerProperty(
     type = bpy.types.Object,
     name = "Object 1",
-    update = update_target1
+    update = update_target1_a
     )
+bpy.types.Scene.target1_b = PointerProperty(
+    type = bpy.types.Object,
+    name = "Object 1",
+    update = update_target1_b
+    )    
 bpy.types.Scene.target2 = PointerProperty(
     type = bpy.types.Object,  
     name = "Object 2",
@@ -71,10 +87,12 @@ class OBJECTPICKER_PT_Panel(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
         
-        layout.prop(scene, "target1", text = "Select Object 1")
+        layout.prop(scene, "target1_a", text = "Select Object 1A")
+        layout.prop(scene, "target1_b", text = "Select Object 1B")
         layout.prop(scene, "target2", text = "Select Object 2")
         
-        layout.label(text = f"Object 1: {scene.target1.name if scene.target1 else 'None'}")
+        layout.label(text = f"Object 1A: {scene.target1_a.name if scene.target1_a else 'None'}")
+        layout.label(text = f"Object 1B: {scene.target1_b.name if scene.target1_b else 'None'}")
         layout.label(text = f"Object 2: {scene.target2.name if scene.target2 else 'None'}")
         
         layout.prop(scene, "material1", text = "Material for object1")
@@ -94,7 +112,8 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)             
         
-    del bpy.types.Scene.target1
+    del bpy.types.Scene.target1_a
+    del bpy.types.Scene.target1_b
     del bpy.types.Scene.target2
     del bpy.types.Scene.material1
     del bpy.types.Scene.material2
